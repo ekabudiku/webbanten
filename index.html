@@ -136,7 +136,7 @@
 
   function loadLayer(file) {
     if (layers[file]) return;
-    return fetch("assets/data/" + file)
+    return fetch("https://github.com/ekabudiku/webbanten/raw/main/assets/data/" + file)
       .then(res => {
         if (!res.ok) {
           throw new Error(`Gagal memuat file zona: ${file}`);
@@ -177,3 +177,4 @@
 </script>
 </body>
 </html>
+
