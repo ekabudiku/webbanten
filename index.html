@@ -7,17 +7,30 @@
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    /* ... CSS Anda (tidak perlu diubah) ... */
     html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
     #map { width: 100%; height: 100%; }
-    #controls { position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 8px; max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-size: 14px; display: flex; flex-direction: column; gap: 15px; max-width: 280px; transition: all 0.3s ease; }
+    #controls { 
+      position: absolute; top: 10px; left: 10px; z-index: 1000; 
+      background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 8px; 
+      max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+      font-size: 14px; display: flex; flex-direction: column; gap: 15px; 
+      max-width: 280px; transition: all 0.3s ease; 
+    }
     #controls h3 { margin: 0 0 5px 0; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
     label { display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; }
     select { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
     #zonaList { max-height: 200px; overflow-y: auto; padding-right: 5px;}
-    .legend { position: absolute; bottom: 20px; right: 10px; z-index: 1000; background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 8px; font-size: 13px; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .legend { 
+      position: absolute; bottom: 20px; right: 10px; z-index: 1000; 
+      background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 8px; 
+      font-size: 13px; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+    }
     .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; border: 1px solid rgba(0,0,0,0.2); }
-    .toggle-button { display: none; position: absolute; top: 10px; left: 10px; z-index: 1001; background: white; border: none; padding: 8px 12px; font-size: 20px; cursor: pointer; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .toggle-button { 
+      display: none; position: absolute; top: 10px; left: 10px; z-index: 1001; 
+      background: white; border: none; padding: 8px 12px; font-size: 20px; cursor: pointer; 
+      border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+    }
     @media (max-width: 768px) {
       .toggle-button { display: block; }
       #controls { left: -350px; width: 280px; height: calc(100vh - 20px); max-height: none; top: 10px; }
@@ -55,8 +68,9 @@
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- file daftar zona -->
+<script src="assets/files.js"></script>
 <script>
-  // PUSAT PETA SUDAH DIUBAH KE KABUPATEN LEBAK
   var map = L.map('map').setView([-6.65, 106.25], 10);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -66,86 +80,68 @@
   var layers = {};
 
   function getColorByKode(kode) {
-    const colors = {
-      "A": "#1f77b4", "B": "#ff7f0e", "C": "#2ca02c", "D": "#d62728"
-    };
+    const colors = { "A": "#1f77b4", "B": "#ff7f0e", "C": "#2ca02c", "D": "#d62728" };
     return colors[kode] || "#999999";
   }
 
   function styleByKode(feature) {
-    return {
-      color: "#000", weight: 1, fillColor: getColorByKode(feature.properties.kode), fillOpacity: 0.6
-    };
+    return { color: "#000", weight: 1, fillColor: getColorByKode(feature.properties.kode), fillOpacity: 0.6 };
   }
 
-  // Bagian ini akan mengambil daftar file dari 'files.json'
-  fetch("assets/files.json")
-    .then(res => {
-        // Tambahkan pengecekan jika file tidak ditemukan (404)
-        if (!res.ok) {
-            throw new Error('Tidak dapat menemukan assets/files.json. Periksa nama dan lokasi file.');
-        }
-        return res.json();
-    })
-    .then(files => {
-      let zonaList = document.getElementById('zonaList');
-      let dropdown = document.getElementById('zonaSelect');
+  // gunakan daftar file dari files.js
+  let files = window.files;
+  let zonaList = document.getElementById('zonaList');
+  let dropdown = document.getElementById('zonaSelect');
 
-      files.forEach((file, idx) => {
-        let zonaName = "Zona " + (idx + 1);
-        
-        let opt = document.createElement("option");
-        opt.value = file;
-        opt.textContent = zonaName;
-        dropdown.appendChild(opt);
+  files.forEach((file, idx) => {
+    let zonaName = "Zona " + (idx + 1);
 
-        let id = "zona_" + idx;
-        let label = document.createElement("label");
-        let checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = file;
-        checkbox.id = id;
+    let opt = document.createElement("option");
+    opt.value = file;
+    opt.textContent = zonaName;
+    dropdown.appendChild(opt);
 
-        label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(" " + zonaName));
-        zonaList.appendChild(label);
+    let id = "zona_" + idx;
+    let label = document.createElement("label");
+    let checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = file;
+    checkbox.id = id;
 
-        checkbox.addEventListener("change", function() {
-          if (this.checked) {
-            loadLayer(file);
-          } else {
-            removeLayer(file);
-          }
-        });
-      });
-      
-      dropdown.addEventListener("change", function() {
-        let file = this.value;
-        Object.keys(layers).forEach(removeLayer);
-        document.querySelectorAll("#zonaList input:checked").forEach(cb => cb.checked = false);
-        
-        if (file) {
-          loadLayer(file).then(() => {
-            let cb = document.querySelector(`#zonaList input[value="${file}"]`);
-            if(cb) cb.checked = true;
-          });
-        }
-      });
-    })
-    .catch(error => {
-        // Menampilkan error di console browser jika 'files.json' gagal dimuat
-        console.error('Error:', error);
-        alert(error.message); // Tampilkan popup error
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(" " + zonaName));
+    zonaList.appendChild(label);
+
+    checkbox.addEventListener("change", function() {
+      if (this.checked) {
+        loadLayer(file);
+      } else {
+        removeLayer(file);
+      }
     });
+  });
+
+  dropdown.addEventListener("change", function() {
+    let file = this.value;
+    Object.keys(layers).forEach(removeLayer);
+    document.querySelectorAll("#zonaList input:checked").forEach(cb => cb.checked = false);
+    
+    if (file) {
+      loadLayer(file).then(() => {
+        let cb = document.querySelector(`#zonaList input[value="${file}"]`);
+        if(cb) cb.checked = true;
+      });
+    }
+  });
 
   function loadLayer(file) {
     if (layers[file]) return;
     return fetch("assets/data/" + file)
       .then(res => {
-          if (!res.ok) {
-              throw new Error(`Gagal memuat file zona: ${file}. Pastikan file ada di folder assets/data/`);
-          }
-          return res.json();
+        if (!res.ok) {
+          throw new Error(`Gagal memuat file zona: ${file}`);
+        }
+        return res.json();
       })
       .then(data => {
         layers[file] = L.geoJSON(data, {
@@ -157,8 +153,8 @@
         map.fitBounds(layers[file].getBounds());
       })
       .catch(error => {
-          console.error('Error memuat layer:', error);
-          alert(error.message);
+        console.error('Error memuat layer:', error);
+        alert(error.message);
       });
   }
 
@@ -169,18 +165,15 @@
     }
   }
 
-  // --- Logika untuk Tombol Toggle di Mobile ---
+  // Tombol toggle (mobile)
   const toggleButton = document.getElementById('toggleButton');
   const controlsPanel = document.getElementById('controls');
-
   toggleButton.addEventListener('click', () => {
     controlsPanel.classList.toggle('active');
   });
-
   map.on('click', () => {
     controlsPanel.classList.remove('active');
   });
-
 </script>
 </body>
 </html>
