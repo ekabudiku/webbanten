@@ -135,14 +135,14 @@
   });
 
   function loadLayer(file) {
-    if (layers[file]) return;
-    return fetch("https://github.com/ekabudiku/webbanten/raw/main/assets/data/" + file)
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Gagal memuat file zona: ${file}`);
-        }
-        return res.json();
-      })
+  if (layers[file]) return;
+  return fetch(`https://cdn.jsdelivr.net/gh/ekabudiku/webbanten@main/assets/data/${file}`)
+    .then(res => {
+      if (!res.ok) {
+        throw new Error(`Gagal memuat file zona: ${file}`);
+      }
+      return res.json();
+    })
       .then(data => {
         layers[file] = L.geoJSON(data, {
           style: styleByKode,
@@ -177,4 +177,5 @@
 </script>
 </body>
 </html>
+
 
