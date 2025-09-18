@@ -1,181 +1,283 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <title>WebGIS Zona Multi</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <meta charset="utf-8"/>
+  <title>WebGIS Final Adaptif</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
-    #map { width: 100%; height: 100%; }
-    #controls { 
-      position: absolute; top: 10px; left: 10px; z-index: 1000; 
-      background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 8px; 
-      max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
-      font-size: 14px; display: flex; flex-direction: column; gap: 15px; 
-      max-width: 280px; transition: all 0.3s ease; 
+    /* === Pengaturan Dasar === */
+    html, body { 
+        margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden;
     }
-    #controls h3 { margin: 0 0 5px 0; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
-    label { display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; }
-    select { width: 100%; padding: 5px; border-radius: 4px; border: 1px solid #ccc; }
-    #zonaList { max-height: 200px; overflow-y: auto; padding-right: 5px;}
-    .legend { 
-      position: absolute; bottom: 20px; right: 10px; z-index: 1000; 
-      background: rgba(255, 255, 255, 0.9); padding: 10px; border-radius: 8px; 
-      font-size: 13px; line-height: 1.5; box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+    #map { width: 100%; height: 100%; background-color: #f0f0f0; }
+
+    /* === Panel Samping (Default Tersembunyi di Mobile) === */
+    #panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 300px;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: -2px 0 10px rgba(0,0,0,0.15);
+        z-index: 1001;
+        transform: translateX(100%); /* Sembunyikan ke kanan */
+        transition: transform 0.3s ease-in-out;
+        display: flex;
+        flex-direction: column;
     }
-    .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; border: 1px solid rgba(0,0,0,0.2); }
-    .toggle-button { 
-      display: none; position: absolute; top: 10px; left: 10px; z-index: 1001; 
-      background: white; border: none; padding: 8px 12px; font-size: 20px; cursor: pointer; 
-      border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); 
+    #panel.open {
+        transform: translateX(0); /* Tampilkan panel */
     }
+    .panel-header { padding: 15px; border-bottom: 1px solid #ddd; }
+    .panel-header h3 { margin: 0; font-size: 18px; }
+    .panel-content { padding: 15px; overflow-y: auto; flex-grow: 1; }
+    select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; }
+
+    /* === Kontrol Peta (Zoom, Lokasi, Toggle) === */
+    .leaflet-control-container .leaflet-top.leaflet-right {
+        top: 15px; right: 15px;
+    }
+    .custom-map-controls {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        overflow: hidden;
+    }
+    .custom-map-controls a {
+        display: block;
+        width: 34px;
+        height: 34px;
+        line-height: 34px;
+        text-align: center;
+        font-size: 1.4em;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #ddd;
+    }
+    .custom-map-controls a:last-child {
+        border-bottom: none;
+    }
+    .custom-map-controls a:hover {
+        background-color: #f4f4f4;
+    }
+    #toggle-panel { display: none; } /* Sembunyikan di desktop */
+
+    /* === Legenda === */
+    #legend { position: absolute; bottom: 15px; left: 15px; z-index: 1000; background: rgba(255, 255, 255, 0.95); padding: 8px 12px; border-radius: 6px; font-size: 13px; line-height: 1.6; box-shadow: 0 2px 8px rgba(0,0,0,0.2); max-height: 40vh; overflow-y: auto; }
+    .legend-item { display: flex; align-items: center; margin-bottom: 3px; }
+    .legend-box { width: 18px; height: 18px; margin-right: 8px; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+
+    /* === ATURAN RESPONSIVE UNTUK SMARTPHONE === */
     @media (max-width: 768px) {
-      .toggle-button { display: block; }
-      #controls { left: -350px; width: 280px; height: calc(100vh - 20px); max-height: none; top: 10px; }
-      #controls.active { left: 10px; }
-      .legend { font-size: 12px; bottom: 10px; right: 10px; margin-bottom: 25px; }
+        #panel {
+            /* Di mobile, panel tidak terlihat di desktop */
+            display: flex;
+        }
+        #toggle-panel {
+            /* Tampilkan tombol toggle di mobile */
+            display: block;
+        }
+        .desktop-only-panel {
+             display: none; /* Sembunyikan panel versi desktop */
+        }
+    }
+    /* Aturan untuk desktop */
+    @media (min-width: 769px) {
+        #panel {
+            width: 320px;
+            height: auto;
+            max-height: calc(100vh - 30px);
+            top: 15px;
+            right: 15px;
+            transform: translateX(0); /* Selalu terlihat */
+            display: block;
+            border-radius: 8px;
+        }
     }
   </style>
 </head>
 <body>
 
-<button class="toggle-button" id="toggleButton">☰</button>
+<div id="map"></div>
 
-<div id="controls">
-  <div>
-    <h3>Pilih Zona Tunggal</h3>
+<div id="panel">
+  <div class="panel-header">
+    <h3>Pilih Zona</h3>
+  </div>
+  <div class="panel-content">
     <select id="zonaSelect">
       <option value="">-- Tampilkan Satu Zona --</option>
     </select>
   </div>
-  <div>
-    <h3>Pilih Multi Zona</h3>
-    <div id="zonaList"></div>
-  </div>
 </div>
 
-<div id="map"></div>
+<div id="legend"><strong>Legenda</strong><div id="legendContent"></div></div>
 
-<div class="legend" id="legend">
-  <strong>Legenda</strong><br>
-  <i style="background:#1f77b4"></i> Kode A<br>
-  <i style="background:#ff7f0e"></i> Kode B<br>
-  <i style="background:#2ca02c"></i> Kode C<br>
-  <i style="background:#d62728"></i> Kode D<br>
-  <i style="background:#999999"></i> Lainnya
-</div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- file daftar zona -->
-<script src="assets/files.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  var map = L.map('map').setView([-6.65, 106.25], 10);
-
+  /* ---------- Konfigurasi & Inisialisasi Peta ---------- */
+  const map = L.map('map', { zoomControl: false }).setView([-6.65, 106.25], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  var layers = {};
+  /* ---------- Kontrol Peta Kustom (dibuat dengan Leaflet) ---------- */
+  L.Control.Custom = L.Control.extend({
+      onAdd: function(map) {
+          const container = L.DomUtil.create('div', 'leaflet-bar custom-map-controls');
+          this._createButton('+', 'Perbesar', 'zoom-in', container, () => map.zoomIn());
+          this._createButton('-', 'Perkecil', 'zoom-out', container, () => map.zoomOut());
+          this._createButton('🎯', 'Cari Lokasi', 'locate-me', container, () => map.locate({ setView: true, maxZoom: 16 }));
+          this._createButton('☰', 'Buka Panel', 'toggle-panel', container, () => document.getElementById('panel').classList.toggle('open'));
+          return container;
+      },
+      _createButton: function(html, title, className, container, fn) {
+          const link = L.DomUtil.create('a', className, container);
+          link.innerHTML = html;
+          link.href = '#';
+          link.title = title;
+          link.id = className;
+          L.DomEvent.on(link, 'click', L.DomEvent.stopPropagation)
+                    .on(link, 'click', L.DomEvent.preventDefault)
+                    .on(link, 'click', fn, this);
+          return link;
+      },
+      onRemove: function(map) {}
+  });
+  new L.Control.Custom({ position: 'topright' }).addTo(map);
 
-  function getColorByKode(kode) {
-    const colors = { "A": "#1f77b4", "B": "#ff7f0e", "C": "#2ca02c", "D": "#d62728" };
-    return colors[kode] || "#999999";
+
+  /* ---------- Variabel & Konfigurasi Global ---------- */
+  const DATA_DIR = 'assets/data/';
+  // --- DAFTAR FILE LENGKAP SUDAH DIMASUKKAN ---
+  const LIST_FILE = [
+    "0001_9101014211000002.geojson",
+    "0001_3326106006020000.geojson",
+    "0001_3211222201860004.geojson",
+    "0001_3273021408990011.geojson",
+    "0001_3207182412940001.geojson",
+    "0001_3273140907780001.geojson",
+    "0001_3273102412980001.geojson",
+    "0001_3204082908940004.geojson",
+    "0001_3272062511850001.geojson",
+    "0001_1771012011920005.geojson",
+    "0001_1509040810960003.geojson",
+    "0001_3273100404010001.geojson",
+    "0001_3305232905020001.geojson",
+    "0001_3204352405010006.geojson",
+    "0001_3273040905960004.geojson",
+    "0001_1509042608950004.geojson",
+    "0001_3204072001990001.geojson",
+    "0001_3204351307040000.geojson",
+    "0001_3204302801010000.geojson",
+    "0001_3211140411870010.geojson"
+  ];
+
+  /* --- Fungsi-fungsi Inti (Warna, Legenda, Layer) --- */
+  const colorCache = {};
+  function kColor(k_in){
+    const k = String(k_in);
+    if(colorCache[k]) return colorCache[k];
+    let hash = 0;
+    for (let i = 0; i < k.length; i++) hash = k.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = Math.abs(hash * 137.508) % 360;
+    colorCache[k] = `hsl(${hue}, 75%, 60%)`;
+    return colorCache[k];
   }
 
-  function styleByKode(feature) {
-    return { color: "#000", weight: 1, fillColor: getColorByKode(feature.properties.kode), fillOpacity: 0.6 };
+  function style(feature){
+    return { color: '#333', weight: 1, fillColor: kColor(feature.properties.kode), fillOpacity: 0.7 };
   }
 
-  // gunakan daftar file dari files.js
-  let files = window.files;
-  let zonaList = document.getElementById('zonaList');
-  let dropdown = document.getElementById('zonaSelect');
-
-  files.forEach((file, idx) => {
-    let zonaName = "Zona " + (idx + 1);
-
-    let opt = document.createElement("option");
-    opt.value = file;
-    opt.textContent = zonaName;
-    dropdown.appendChild(opt);
-
-    let id = "zona_" + idx;
-    let label = document.createElement("label");
-    let checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.value = file;
-    checkbox.id = id;
-
-    label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(" " + zonaName));
-    zonaList.appendChild(label);
-
-    checkbox.addEventListener("change", function() {
-      if (this.checked) {
-        loadLayer(file);
-      } else {
-        removeLayer(file);
-      }
+  const legendSet = new Set();
+  function updateLegend(){
+    const container = document.getElementById('legendContent');
+    container.innerHTML = '';
+    const sortedKodes = Array.from(legendSet).sort();
+    sortedKodes.forEach(k => {
+      const row = document.createElement('div');
+      row.className = 'legend-item';
+      const box = document.createElement('div');
+      box.className = 'legend-box';
+      box.style.backgroundColor = kColor(k);
+      const lbl = document.createElement('span');
+      lbl.textContent = 'Kode ' + k;
+      row.appendChild(box);
+      row.appendChild(lbl);
+      container.appendChild(row);
     });
-  });
+  }
 
-  dropdown.addEventListener("change", function() {
-    let file = this.value;
-    Object.keys(layers).forEach(removeLayer);
-    document.querySelectorAll("#zonaList input:checked").forEach(cb => cb.checked = false);
-    
-    if (file) {
-      loadLayer(file).then(() => {
-        let cb = document.querySelector(`#zonaList input[value="${file}"]`);
-        if(cb) cb.checked = true;
-      });
-    }
-  });
+  const layers = {};
+  function remLayer(f){
+    if(layers[f]){ map.removeLayer(layers[f]); delete layers[f]; }
+  }
 
-  function loadLayer(file) {
-  if (layers[file]) return;
-  return fetch(`https://cdn.jsdelivr.net/gh/ekabudiku/webbanten@main/assets/data/${file}`)
-    .then(res => {
-      if (!res.ok) {
-        throw new Error(`Gagal memuat file zona: ${file}`);
-      }
-      return res.json();
-    })
-      .then(data => {
-        layers[file] = L.geoJSON(data, {
-          style: styleByKode,
+  function addLayer(f){
+    if(layers[f]) return Promise.resolve();
+    return fetch(DATA_DIR + f)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(geo => {
+        if (geo.version && geo.oid && geo.size) throw new Error("File ini adalah pointer Git LFS, bukan GeoJSON.");
+        layers[f] = L.geoJSON(geo, {
+          style,
           onEachFeature: (feature, layer) => {
-            layer.bindPopup("Kode: " + feature.properties.kode);
+            const k = feature.properties.kode;
+            if (k) {
+              layer.bindPopup('Kode: ' + k);
+              legendSet.add(k);
+            }
           }
         }).addTo(map);
-        map.fitBounds(layers[file].getBounds());
+        updateLegend();
+        map.fitBounds(layers[f].getBounds());
       })
-      .catch(error => {
-        console.error('Error memuat layer:', error);
-        alert(error.message);
+      .catch(err => {
+          console.error('Gagal memuat layer:', f, err);
+          alert(`Gagal memuat file zona: ${f}.\n\nError: ${err.message}`);
       });
   }
 
-  function removeLayer(file) {
-    if (layers[file]) {
-      map.removeLayer(layers[file]);
-      delete layers[file];
-    }
-  }
+  /* ---------- Event Listeners & Inisialisasi ---------- */
+  (function init() {
+    const sel = document.getElementById('zonaSelect');
+    LIST_FILE.forEach((file, i) => {
+      const opt = document.createElement('option');
+      opt.value = file;
+      opt.textContent = 'Zona ' + (i + 1);
+      sel.appendChild(opt);
+    });
+    sel.onchange = e => {
+      const v = e.target.value;
+      Object.keys(layers).forEach(remLayer);
+      legendSet.clear();
+      updateLegend();
+      if(v) addLayer(v);
+      // Di mobile, tutup panel setelah memilih zona
+      if (window.innerWidth <= 768) {
+        document.getElementById('panel').classList.remove('open');
+      }
+    };
 
-  // Tombol toggle (mobile)
-  const toggleButton = document.getElementById('toggleButton');
-  const controlsPanel = document.getElementById('controls');
-  toggleButton.addEventListener('click', () => {
-    controlsPanel.classList.toggle('active');
-  });
-  map.on('click', () => {
-    controlsPanel.classList.remove('active');
-  });
+    map.on('click', () => {
+        document.getElementById('panel').classList.remove('open');
+    });
+
+    map.on('locationfound', (e) => {
+      L.marker(e.latlng).addTo(map).bindPopup(`Anda berada di sini.`).openPopup();
+    });
+
+
+
+    map.on('locationerror', (e) => {
+      alert("Gagal mendapatkan lokasi: " + e.message);
+    });
+  })();
 </script>
 </body>
 </html>
-
-
